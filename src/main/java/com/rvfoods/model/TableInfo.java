@@ -12,6 +12,6 @@ public class TableInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long restaurantId;
-    private Integer tableNumber;
+    private String tableNumber;
     private String qrCode; // optional: store QR url or identifier
 }

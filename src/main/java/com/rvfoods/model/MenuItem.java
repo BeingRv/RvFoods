@@ -17,5 +17,6 @@ public class MenuItem {
     private Double price;
     private Boolean veg;
     private String imageUrl;
+    @Column(name="availability")
     private Boolean available;
 }
