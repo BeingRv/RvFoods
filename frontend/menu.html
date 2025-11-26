@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Rv Foods - Menu</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>body{padding:20px}</style>
+</head>
+<body>
+  <div class="container">
+    <h2>Rv Foods - Menu</h2>
+    <div id="menu"></div>
+    <hr/>
+    <h4>Cart</h4>
+    <div id="cart"></div>
+    <button id="placeOrderBtn" class="btn btn-primary">Place Order</button>
+    <div id="orderResult" class="mt-3"></div>
+  </div>
+
+<script>
+const apiBase = window.location.origin.replace(/:\/\/.+?:\d+/, '') + ':8080'; // adjust if backend hosted elsewhere
+let cart = [];
+
+function renderMenu(data) {
+  const container = document.getElementById('menu');
+  container.innerHTML = '';
+  const cats = data.categories || [];
+  cats.forEach(c => {
+    const h = document.createElement('h4');
+    h.textContent = c.category.name;
+    container.appendChild(h);
+    const list = document.createElement('div');
+    c.items.forEach(i => {
+      const card = document.createElement('div');
+      card.className = 'card mb-2';
+      const body = document.createElement('div');
+      body.className = 'card-body';
+      body.innerHTML = '<h5>'+i.name+' - ₹'+i.price+'</h5><p>'+ (i.description||'') +'</p>';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm btn-success';
+      btn.textContent = 'Add';
+      btn.onclick = ()=> {
+        addToCart(i.id, i.name, i.price);
+      };
+      body.appendChild(btn);
+      card.appendChild(body);
+      list.appendChild(card);
+    });
+    container.appendChild(list);
+  });
+}
+
+function addToCart(itemId, name, price) {
+  const existing = cart.find(x => x.itemId === itemId);
+  if (existing) existing.quantity++;
+  else cart.push({itemId, name, price, quantity:1});
+  renderCart();
+}
+
+function renderCart(){
+  const c = document.getElementById('cart');
+  c.innerHTML = '';
+  cart.forEach(it => {
+    const div = document.createElement('div');
+    div.textContent = it.name + ' x ' + it.quantity + ' = ₹' + (it.price*it.quantity);
+    c.appendChild(div);
+  });
+}
+
+document.getElementById('placeOrderBtn').onclick = async () => {
+  if (cart.length===0) { alert('Cart empty'); return; }
+  const tableId = new URLSearchParams(window.location.search).get('tableId') || '1';
+  const body = { tableId: Number(tableId), items: cart.map(i=>({itemId:i.itemId, quantity:i.quantity})) };
+  const res = await fetch(apiBase + '/api/order', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  const data = await res.json();
+  document.getElementById('orderResult').innerText = 'Order placed. Order ID: ' + data.orderId;
+  cart = [];
+  renderCart();
+};
+
+async function loadMenu(){
+  try{
+    // Example: call backend on localhost:8080
+    const res = await fetch('http://localhost:8080/api/menu?restaurantId=1');
+    const data = await res.json();
+    renderMenu(data);
+  }catch(err){
+    document.getElementById('menu').innerText = 'Failed to load menu. Make sure backend is running on http://localhost:8080';
+    console.error(err);
+  }
+}
+
+loadMenu();
+</script>
+</body>
+</html>
